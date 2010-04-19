@@ -1,0 +1,40 @@
+ 0 1 2 3 4 5 6 7 8              15
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|S|A|N|C|                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+| Seq Nr.	    | Ack Nr.       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|           Checksum            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                               |
+|             data              |
+|                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+S = SYN Bit: Needed to establish a new connection. SEQ containts a start ID
+A = ACK Bit:
+	SYN+ACK: needed as response to the SYN establish request. Return value should be SYN ID + 1
+	ACK: Reply to the sender and acknowledge the received paket
+	
+	
+If handshake is done successfully, a connection is established.
+
+N = NULL Segment: sent to signal that the other end is still alive.
+	NULL + ACK as respone - otherwise the connection is marked as timed out
+	
+	
+C = Checksum: CRC Checksum
+	C = 0: checksum of header
+	C = 1: checksum of header + data
+	
+Retransmit
+==========
+
+If no ACK packet is received, after 600 msec the packet is retransmited.
+If there is still no ACK - the connection is marked as broken.
+No other packages will be send any more
+
+Data
+====
+
+The header has fixed length. So the beginning of the data block is always the same
