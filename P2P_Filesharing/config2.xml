@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<peerconfig myHostaddress="localhost" myPort="34545">
+	<peer>
+		<peerurl>http://127.0.0.1:4444/SuperPeerService?wsdl</peerurl>
+		<servicename>SuperPeerListenerService</servicename>
+		<namespace>http://client.cn2010.tuwien.ac.at</namespace>
+	</peer>
+	<peer>
+		<peerurl>http://127.0.0.1:7777/SuperPeerService?wsdl</peerurl>
+		<servicename>SuperPeerListenerService</servicename>
+		<namespace>http://client.cn2010.tuwien.ac.at</namespace>
+	</peer>
+	
+</peerconfig>
