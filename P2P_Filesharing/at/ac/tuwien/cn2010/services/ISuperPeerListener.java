@@ -7,6 +7,6 @@ import javax.jws.WebService;
 public interface ISuperPeerListener {
 	
 	@WebMethod
-	public PeerInformation[] getAllSuperPeers();
+	public SuperPeerInformationTransferObject[] getAllSuperPeers();
 
 }

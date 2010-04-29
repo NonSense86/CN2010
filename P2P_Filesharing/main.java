@@ -1,36 +1,52 @@
 import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.UnknownHostException;
 
+import javax.xml.namespace.QName;
+import javax.xml.ws.Service;
+
 import at.ac.tuwien.cn2010.PeerKernel;
-import at.ac.tuwien.cn2010.client.PeerInformation;
+import at.ac.tuwien.cn2010.SuperPeerInformation;
 import at.ac.tuwien.cn2010.client.SuperPeerListenerService;
 import at.ac.tuwien.cn2010.client.SuperPeerListener;
-
-
 
 public class main {
 
 	/**
 	 * @param args
-	 * @throws UnknownHostException 
+	 * @throws UnknownHostException
 	 */
 	public static void main(String[] args) throws UnknownHostException {
-		
-		InetAddress address = InetAddress.getByName("127.0.0.1");
-		
-		PeerKernel kernel = new PeerKernel(address, 34545);		
 
-		kernel.StartUpAsSuperPeer().StartBoot();
+		ConfigReader reader = new ConfigReader(args[0]);
+
+		ConfigReaderResult result = reader.ReadConfig();
+
+		/**
+		 * This section creates a kernel
+		 */
+		System.out.println(String.format("** My starup params host=%s port=%d",
+				result.getMyAddress(), result.getMyPort()));
 		
-		SuperPeerListenerService service = new SuperPeerListenerService();
-		SuperPeerListener foo = service.getSuperPeerListenerPort();
-		
-		for(PeerInformation info: foo.getAllSuperPeers())
-		{			
+		PeerKernel kernel = new PeerKernel(result.getMyAddress(), result
+				.getMyPort());
+
+		/**
+		 *  This section is SuperPeer specific
+		 *  Apply config results to kernel - at the begin we only know SuperPeers
+		 *  We dont have to care about normal Peers
+		 */
+		for (SuperPeerInformation info : result.getPeersListReference()) {
+			System.out.println(String.format("** Applying \n\tpeerurl=%s\n\tservicename=%s\n\tnamespace=%s",
+				info.getPeerURL(), info.getServiceName().getLocalPart(), info.getServiceName().getNamespaceURI()));
 			
-			System.out.println(info.getPeerPort());
-			System.out.println(info.getPeerAdress());
+			kernel.getSuperPeerNeighborStorageReference().addSuperPeerNeighbor(info);
 		}
-	}
 
+		/**
+		 *  Startup ...
+		 */
+		kernel.StartUpAsSuperPeer().StartBoot();
+	}
 }

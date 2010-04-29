@@ -5,16 +5,19 @@ import java.net.InetAddress;
 import javax.xml.ws.Endpoint;
 
 import at.ac.tuwien.cn2010.IPeer;
+import at.ac.tuwien.cn2010.SuperPeerNeighborStorage;
 
 public class SuperPeerServiceInstance implements IPeer {
 	
 	private InetAddress address_;
 	private int port_;
 	private Endpoint endpoint_;
+	private SuperPeerNeighborStorage storage_;
 	
-	public SuperPeerServiceInstance(InetAddress address, int port) {
+	public SuperPeerServiceInstance(InetAddress address, int port, SuperPeerNeighborStorage storage) {
 		this.address_ = address;
 		this.port_ = port;
+		this.storage_ = storage;
 	}
 	
 	/**
@@ -30,7 +33,7 @@ public class SuperPeerServiceInstance implements IPeer {
 		
 		System.out.println("[SuperPeerInstance] Publish endpoint at " + strUrl);
 		
-		endpoint_ = Endpoint.publish(strUrl, new SuperPeerListener());		
+		endpoint_ = Endpoint.publish(strUrl, new SuperPeerListener(storage_));		
 	}
 
 	@Override

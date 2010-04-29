@@ -26,12 +26,12 @@ public interface SuperPeerListener {
     /**
      * 
      * @return
-     *     returns java.util.List<at.ac.tuwien.cn2010.client.PeerInformation>
+     *     returns java.util.List<at.ac.tuwien.cn2010.client.SuperPeerInformationTransferObject>
      */
     @WebMethod
     @WebResult(targetNamespace = "")
     @RequestWrapper(localName = "getAllSuperPeers", targetNamespace = "http://client.cn2010.tuwien.ac.at", className = "at.ac.tuwien.cn2010.client.GetAllSuperPeers")
     @ResponseWrapper(localName = "getAllSuperPeersResponse", targetNamespace = "http://client.cn2010.tuwien.ac.at", className = "at.ac.tuwien.cn2010.client.GetAllSuperPeersResponse")
-    public List<PeerInformation> getAllSuperPeers();
+    public List<SuperPeerInformationTransferObject> getAllSuperPeers();
 
 }

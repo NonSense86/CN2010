@@ -17,7 +17,7 @@ import javax.xml.ws.WebServiceFeature;
  * Generated source version: 2.1
  * 
  */
-@WebServiceClient(name = "SuperPeerListenerService", targetNamespace = "http://client.cn2010.tuwien.ac.at", wsdlLocation = "http://127.0.0.1:34545/SuperPeerService?wsdl")
+@WebServiceClient(name = "SuperPeerListenerService", targetNamespace = "http://client.cn2010.tuwien.ac.at", wsdlLocation = "http://127.0.0.1:1234/SuperPeerService?wsdl")
 public class SuperPeerListenerService
     extends Service
 {
@@ -30,9 +30,9 @@ public class SuperPeerListenerService
         try {
             URL baseUrl;
             baseUrl = at.ac.tuwien.cn2010.client.SuperPeerListenerService.class.getResource(".");
-            url = new URL(baseUrl, "http://127.0.0.1:34545/SuperPeerService?wsdl");
+            url = new URL(baseUrl, "http://127.0.0.1:1234/SuperPeerService?wsdl");
         } catch (MalformedURLException e) {
-            logger.warning("Failed to create URL for the wsdl Location: 'http://127.0.0.1:34545/SuperPeerService?wsdl', retrying as a local file");
+            logger.warning("Failed to create URL for the wsdl Location: 'http://127.0.0.1:1234/SuperPeerService?wsdl', retrying as a local file");
             logger.warning(e.getMessage());
         }
         SUPERPEERLISTENERSERVICE_WSDL_LOCATION = url;

@@ -25,8 +25,8 @@ import javax.xml.namespace.QName;
 public class ObjectFactory {
 
     private final static QName _GetAllSuperPeersResponse_QNAME = new QName("http://client.cn2010.tuwien.ac.at", "getAllSuperPeersResponse");
-    private final static QName _PeerInformation_QNAME = new QName("http://client.cn2010.tuwien.ac.at", "peerInformation");
     private final static QName _GetAllSuperPeers_QNAME = new QName("http://client.cn2010.tuwien.ac.at", "getAllSuperPeers");
+    private final static QName _SuperPeerInformationTransferObject_QNAME = new QName("http://client.cn2010.tuwien.ac.at", "superPeerInformationTransferObject");
 
     /**
      * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: at.ac.tuwien.cn2010.client
@@ -36,11 +36,11 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link GetAllSuperPeers }
+     * Create an instance of {@link SuperPeerInformationTransferObject }
      * 
      */
-    public GetAllSuperPeers createGetAllSuperPeers() {
-        return new GetAllSuperPeers();
+    public SuperPeerInformationTransferObject createSuperPeerInformationTransferObject() {
+        return new SuperPeerInformationTransferObject();
     }
 
     /**
@@ -52,11 +52,11 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link PeerInformation }
+     * Create an instance of {@link GetAllSuperPeers }
      * 
      */
-    public PeerInformation createPeerInformation() {
-        return new PeerInformation();
+    public GetAllSuperPeers createGetAllSuperPeers() {
+        return new GetAllSuperPeers();
     }
 
     /**
@@ -69,21 +69,21 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link JAXBElement }{@code <}{@link PeerInformation }{@code >}}
-     * 
-     */
-    @XmlElementDecl(namespace = "http://client.cn2010.tuwien.ac.at", name = "peerInformation")
-    public JAXBElement<PeerInformation> createPeerInformation(PeerInformation value) {
-        return new JAXBElement<PeerInformation>(_PeerInformation_QNAME, PeerInformation.class, null, value);
-    }
-
-    /**
      * Create an instance of {@link JAXBElement }{@code <}{@link GetAllSuperPeers }{@code >}}
      * 
      */
     @XmlElementDecl(namespace = "http://client.cn2010.tuwien.ac.at", name = "getAllSuperPeers")
     public JAXBElement<GetAllSuperPeers> createGetAllSuperPeers(GetAllSuperPeers value) {
         return new JAXBElement<GetAllSuperPeers>(_GetAllSuperPeers_QNAME, GetAllSuperPeers.class, null, value);
+    }
+
+    /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link SuperPeerInformationTransferObject }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://client.cn2010.tuwien.ac.at", name = "superPeerInformationTransferObject")
+    public JAXBElement<SuperPeerInformationTransferObject> createSuperPeerInformationTransferObject(SuperPeerInformationTransferObject value) {
+        return new JAXBElement<SuperPeerInformationTransferObject>(_SuperPeerInformationTransferObject_QNAME, SuperPeerInformationTransferObject.class, null, value);
     }
 
 }

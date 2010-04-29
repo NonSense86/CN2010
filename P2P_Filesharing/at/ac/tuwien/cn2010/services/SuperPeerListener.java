@@ -1,33 +1,48 @@
 package at.ac.tuwien.cn2010.services;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 import javax.jws.WebService;
 
+import at.ac.tuwien.cn2010.SuperPeerInformation;
+import at.ac.tuwien.cn2010.SuperPeerNeighborStorage;
+
 @WebService(targetNamespace="http://client.cn2010.tuwien.ac.at")
 public class SuperPeerListener implements ISuperPeerListener {
 
+	private SuperPeerNeighborStorage storage_;
+	
+	public SuperPeerListener(SuperPeerNeighborStorage storage) {
+		this.storage_ = storage;
+	}
+	
+	/**
+	 * Returns all known Super Peers to the requestor
+	 * This includes not the served super peer
+	 */
 	@Override
-	public PeerInformation[] getAllSuperPeers() {
+	public synchronized SuperPeerInformationTransferObject[] getAllSuperPeers() {
 		
-		PeerInformation[] array = new PeerInformation[10];
+		ArrayList<SuperPeerInformationTransferObject> array = new ArrayList<SuperPeerInformationTransferObject>();
 		
-		ArrayList<PeerInformation> foo = new ArrayList<PeerInformation>();
+		storage_.acquireLock();
 		
-		PeerInformation i1 = new PeerInformation();
-		i1.PeerPort = 123;
-		try {
-			i1.PeerAdress = InetAddress.getByName("localhost").getHostAddress().toString();
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		try
+		{		
+			for(SuperPeerInformation peer: storage_.getNeighborPeersListReference()) {
+				SuperPeerInformationTransferObject info = new SuperPeerInformationTransferObject();
+				
+				info.PeerUrl = peer.getPeerURL().toString();
+				info.Namespace = peer.getServiceName().getNamespaceURI();
+				info.ServiceName = peer.getServiceName().getLocalPart();				
+				
+				array.add(info);				
+			}			
+		}		
+		finally {
+			storage_.releaseLock();			
 		}
 		
-		foo.add(i1);
-		
-		return (PeerInformation[]) foo.toArray(new PeerInformation[foo.size()]);
+		return (SuperPeerInformationTransferObject[]) array.toArray(new SuperPeerInformationTransferObject[array.size()]);
 	}
-
 }

@@ -19,7 +19,7 @@ import javax.xml.bind.annotation.XmlType;
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
- *         &lt;element name="return" type="{http://client.cn2010.tuwien.ac.at}peerInformation" maxOccurs="unbounded" minOccurs="0"/>
+ *         &lt;element name="return" type="{http://client.cn2010.tuwien.ac.at}superPeerInformationTransferObject" maxOccurs="unbounded" minOccurs="0"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
@@ -35,7 +35,7 @@ import javax.xml.bind.annotation.XmlType;
 public class GetAllSuperPeersResponse {
 
     @XmlElement(name = "return")
-    protected List<PeerInformation> _return;
+    protected List<SuperPeerInformationTransferObject> _return;
 
     /**
      * Gets the value of the return property.
@@ -55,13 +55,13 @@ public class GetAllSuperPeersResponse {
      * 
      * <p>
      * Objects of the following type(s) are allowed in the list
-     * {@link PeerInformation }
+     * {@link SuperPeerInformationTransferObject }
      * 
      * 
      */
-    public List<PeerInformation> getReturn() {
+    public List<SuperPeerInformationTransferObject> getReturn() {
         if (_return == null) {
-            _return = new ArrayList<PeerInformation>();
+            _return = new ArrayList<SuperPeerInformationTransferObject>();
         }
         return this._return;
     }
