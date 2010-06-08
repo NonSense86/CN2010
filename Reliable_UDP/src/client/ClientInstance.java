@@ -1,7 +1,9 @@
 package client;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.Properties;
 
 import protokoll.Barrier;
 import protokoll.IPacketTransmissionNotifications;
@@ -9,56 +11,83 @@ import protokoll.PacketTansmission;
 import protokoll.PacketTansmissionInfo;
 import protokoll.RUDPPacket;
 import protokoll.RUDPPacketFactory;
+import server.RemoteMachine;
 
 public class ClientInstance implements IPacketTransmissionNotifications {
 
-	private int port_;
-	private InetAddress host_;
-	private PackageListenerThread packageListenerThread_;
-	private Barrier barrier_;
-	private PacketTansmission packetTansmission_;
-	private DatagramSocket clientSocket_;	
+	private String[] params;
+	private int port;
+	private RemoteMachine server;
+	private PackageListenerThread packageListenerThread;
+	private Barrier barrier;
+	private PacketTansmission packetTansmission;
+	private DatagramSocket clientSocket;	
 
-	public ClientInstance() {
-		barrier_ = new Barrier();
-		packetTansmission_ = new PacketTansmission(this);		
+	public ClientInstance(String[] params) {
+		this.params = params;
+		init();
+		barrier = new Barrier();
+		packetTansmission = new PacketTansmission(this);		
 	}
 
+	/*
 	public ClientInstance(InetAddress host, int port) {
 		this();
 
-		this.host_ = host;
-		this.port_ = port;
+		this.host = host;
+		this.port = port;
+	}
+	*/
+	
+	private void init() {
+		try {
+			if (params.length == 1) {
+				readProperties(params[0]);
+			} else if (params.length == 2) {
+				port = Integer.parseInt(params[0]);
+				server = new RemoteMachine(params[1]);
+			} else {
+				System.out.println("Invalid argument count");
+				System.out.println("USAGE: <myPort> <serverHost:serverPort>");
+				System.exit(0);
+			}
+			
+			
+		} catch (Exception e) {
+			System.out.println("Initialization failed");
+			e.printStackTrace();
+			System.exit(0);
+		}
 	}
 
 	public int OpenConnection() throws IOException {
 		
-		clientSocket_ = new DatagramSocket();
+		clientSocket = new DatagramSocket(port);
 		
-		packetTansmission_.setSocket(clientSocket_);
+		packetTansmission.setSocket(clientSocket);
 		
 		/*
 		 * First - before we send connection request - make sure that we can
-		 * receive the reply from the server. So we need a local Port were we
+		 * receive the reply from the server. So we need a local Port where we
 		 * listen on
 		 */
 
-		packageListenerThread_ = new PackageListenerThread(barrier_, packetTansmission_, clientSocket_);
-		packageListenerThread_.start();
+		packageListenerThread = new PackageListenerThread(barrier, packetTansmission, clientSocket);
+		packageListenerThread.start();
 
 		/* Block until server port is started */
-		barrier_.block();
+		barrier.block();
 
 		/* Now send the connection request to the server */
 		RUDPPacket packet = RUDPPacketFactory
 				.createConnectionRequestPacket();
 
-		packetTansmission_.SendPacket(packet, host_, port_);
+		packetTansmission.SendPacket(packet, server.getHost(), server.getPort());
 
 		/* Waiting for the server reply and return the connection id */
-		barrier_.block();
+		barrier.block();
 
-		return packageListenerThread_.getLastConnectionId();
+		return packageListenerThread.getLastConnectionId();
 	}
 
 	/**
@@ -73,7 +102,7 @@ public class ClientInstance implements IPacketTransmissionNotifications {
 		RUDPPacket packet = RUDPPacketFactory.createPayloadPacket(connectionId,
 			payload);
 
-		packetTansmission_.SendPacket(packet, host_, port_);
+		packetTansmission.SendPacket(packet, server.getHost(), server.getPort());
 	}
 
 	/**
@@ -83,7 +112,7 @@ public class ClientInstance implements IPacketTransmissionNotifications {
 	@Override
 	public void OnPacketACKMissing(PacketTansmissionInfo info) {
 		/* Unblock all who are waiting for the ACK */
-		barrier_.releaseAll();
+		barrier.releaseAll();
 
 		System.out.println("***** Transmission: ACK missing: SEQ="
 				+ info.getSeqNumber() + " SENT ON="
@@ -102,5 +131,35 @@ public class ClientInstance implements IPacketTransmissionNotifications {
 	public void OnDuplicatePacket() {
 		System.out.println("***** Transmission: Packet duplicates");
 
+	}
+	
+	/**
+	 * Reads properties form specified property file.
+	 * @param fileName Name of the file where properties are stored
+	 * @throws Exception
+	 */
+	private void readProperties(String fileName) throws Exception {
+		InputStream is = ClassLoader.getSystemResourceAsStream(fileName);
+
+		if (is != null) {
+			Properties properties = new Properties();
+			try {
+				properties.load(is);
+				port = Integer.parseInt(properties.getProperty("port"));
+				server = new RemoteMachine(properties.getProperty("hostPort"));
+								
+			} catch (Exception e) {
+				throw new Exception();
+			} finally {
+				try {
+					is.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		} else {
+			System.out.println("Properties file not found.");
+			System.exit(0);
+		}
 	}
 }
