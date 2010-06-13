@@ -5,150 +5,202 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.DatagramPacket;
+
 
 public class RUDPPacket {
-
-	private boolean IsSyn_;
-
-	private boolean IsAck_;
-
-	private boolean IsNull_;
-
-	private boolean IsChecksum_;
 	
-	private boolean IsConnection_;
+	// Not encoded!
+	private PacketType packetType;
+	private RemoteMachine sender;
+	private RemoteMachine receiver;
+	private int resendCount;
 
-	private long checksum_;
+	public RUDPPacket() {}
+	
+	public RUDPPacket(DatagramPacket packet) throws IOException {
+		this.sender = new RemoteMachine(packet.getAddress(), packet.getPort());
+		decodePackage(packet.getData());
+	}
+	
+	public RUDPPacket(RemoteMachine receiver) {
+		this.receiver = receiver;
+	}
+	
+	private boolean IsSyn;
 
-	private int seqNumber_;
+	private boolean IsAck;
 
-	private int ackNumber_;
+	private boolean IsNull;
 
-	private int connectionId_;	
+	private boolean IsChecksum;
+	
+	private boolean IsConnection;
 
-	private int payloadLength_;
+	private long checksum;
 
-	private byte[] payload_;
+	private int seqNumber;
+
+	private int ackNumber;
+
+	private int connectionId;	
+
+	private int payloadLength;
+
+	private byte[] payload;
 
 	/**
 	 * SYN
 	 */
 	public boolean getIsSyn() {
-		return IsSyn_;
+		return IsSyn;
 	}
 
 	public void setIsSyn(boolean IsSyn) {
-		this.IsSyn_ = IsSyn;
+		this.IsSyn = IsSyn;
 	}
 
 	/**
 	 * ACK
 	 */
 	public boolean getIsAck() {
-		return IsAck_;
+		return IsAck;
 	}
 
 	public void setIsAck(boolean IsAck) {
-		this.IsAck_ = IsAck;
+		this.IsAck = IsAck;
 	}
 
 	/**
 	 * NULL
 	 */
 	public boolean getIsNull() {
-		return IsNull_;
+		return IsNull;
 	}
 
 	public void setIsNull(boolean IsNull) {
-		this.IsNull_ = IsNull;
+		this.IsNull = IsNull;
 	}
 
 	/**
 	 * CHECKSUM
 	 */
 	public boolean getIsChecksum() {
-		return IsChecksum_;
+		return IsChecksum;
 	}
 
 	public void setIsChecksum(boolean IsChecksum) {
-		this.IsChecksum_ = IsChecksum;
+		this.IsChecksum = IsChecksum;
 	}
 	
 	/**
 	 * CONNECTION
 	 */
 	public boolean getIsConnection() {
-		return IsConnection_;
+		return IsConnection;
 	}
 
 	public void setIsConnection(boolean IsConnection) {
-		this.IsConnection_ = IsConnection;
+		this.IsConnection = IsConnection;
 	}	
 
 	/**
 	 * checksum value
 	 */
 	public long getChecksum() {
-		return checksum_;
+		return checksum;
 	}
 
 	private void setChecksum(long checksum) {
-		this.checksum_ = checksum;
+		this.checksum = checksum;
 	}
 
 	/**
 	 * sequence number
 	 */
 	public int getSeqNumber() {
-		return seqNumber_;
+		return seqNumber;
 	}
 
 	public void setSeqNumber(int seqNumber) {
-		this.seqNumber_ = seqNumber;
+		this.seqNumber = seqNumber;
 	}
 
 	/**
 	 * acknowledge number
 	 */
 	public int getAckNumber() {
-		return ackNumber_;
+		return ackNumber;
 	}
 
 	public void setAckNumber(int ackNumber) {
-		this.ackNumber_ = ackNumber;
+		this.ackNumber = ackNumber;
 	}
 
 	/**
 	 * connection number
 	 */
 	public int getConnectionId() {
-		return connectionId_;
+		return connectionId;
 	}
 
 	public void setConnectionId(int connectionId) {
-		this.connectionId_ = connectionId;
+		this.connectionId = connectionId;
 	}
 
 	/**
 	 * payload length
 	 */
 	public int getPayloadLength() {
-		return payloadLength_;
+		return payloadLength;
 	}
 
 	private void setPayloadLength(int payloadLength) {
-		this.payloadLength_ = payloadLength;
+		this.payloadLength = payloadLength;
 	}
 
 	/**
 	 * payload content
 	 */
 	public byte[] getPayload() {
-		return payload_;
+		return payload;
 	}
 
 	public void setPayload(byte[] payload) {
-		this.payload_ = payload;
+		this.payload = payload;
+	}
+	
+	public PacketType getPacketType() {
+		return packetType;
+	}
+
+	public void setPacketType(PacketType packetType) {
+		this.packetType = packetType;
+	}
+	
+	public RemoteMachine getSender() {
+		return sender;
+	}
+
+	public void setSender(RemoteMachine sender) {
+		this.sender = sender;
+	}
+
+	public RemoteMachine getReceiver() {
+		return receiver;
+	}
+
+	public void setReceiver(RemoteMachine receiver) {
+		this.receiver = receiver;
+	}
+	
+
+	public int getResendCount() {
+		return resendCount;
+	}
+
+	public void setResendCount(int resendCount) {
+		this.resendCount = resendCount;
 	}
 
 	@Override

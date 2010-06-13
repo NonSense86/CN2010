@@ -10,6 +10,6 @@ public class Server {
 		ServerInstance instance = new ServerInstance(args);
 		//ServerInstance instance = new ServerInstance(4711);
 		
-		instance.StartListening();		
+		//instance.startListening();		
 	}
 }

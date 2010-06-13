@@ -21,25 +21,26 @@ public class MessageBroker {
 	public synchronized void ProceedPacket(DatagramPacket packet)
 			throws IOException {
 
-		RUDPPacket rudpPacket = new RUDPPacket();
-		rudpPacket.decodePackage(packet.getData());
+		RUDPPacket rudpPacket = new RUDPPacket(packet);
 
+		/**
+		 * If ACK = true, SYN = false, NULL = true we got a connection reply
+		 * from the server
+		 */
+		if (rudpPacket.getIsAck() == true && rudpPacket.getIsSyn() == false && rudpPacket.getIsNull() == true) {
+			// TODO: Check authenticity
+			notificationClass_.OnNewConnectionReply(rudpPacket.getConnectionId());
+			
+		}
+		
 		/* inform listener that we received an package */
 		hook_.OnPacketReceived(rudpPacket);
 		
 		/* DEBUG */
-		DatagramPacketTracer.TraceDatagramPacket(packet);
-		System.out.println(rudpPacket);
+		//DatagramPacketTracer.TraceDatagramPacket(packet);
+		//System.out.println(rudpPacket);
 		/* DEBUG END */
 
-		/**
-		 * If ACK = true, SYN = true, NULL = false we got a connection reply
-		 * from the server
-		 */
-		if (rudpPacket.getIsAck() == true && rudpPacket.getIsSyn() == true
-				&& rudpPacket.getIsNull() == false) {
-			
-			notificationClass_.OnNewConnectionReply(rudpPacket.getConnectionId());
-		}
+	
 	}
 }

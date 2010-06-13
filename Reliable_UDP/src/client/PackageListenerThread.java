@@ -4,7 +4,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
-import protokoll.Barrier;
+
 import protokoll.IPacketTansmissionHook;
 
 
@@ -12,28 +12,27 @@ import protokoll.IPacketTansmissionHook;
 public class PackageListenerThread extends Thread implements
 		IPacketNotification {
 
-	private Barrier barrier_;
+
 	private int lastConnectionId_;	
 	private IPacketTansmissionHook hook_;
 	private DatagramSocket socket_;
+	private ClientInstance client;
 
-	public PackageListenerThread(Barrier barrier, IPacketTansmissionHook hook, DatagramSocket socket) {
-		this.barrier_ = barrier;	
-		this.hook_ = hook;
-		this.socket_ = socket;
+	public PackageListenerThread(ClientInstance client) {
+		this.client = client;
+			
+		this.hook_ = client.getPacketTransmission();
+		this.socket_ = client.getClientSocket();
 	}
 
 	public void run() {
 		try {
 			
 
-			System.out.println("Client listeing on port " + socket_.getLocalPort());
+			System.out.println("Client listening on port " + socket_.getLocalPort());
 
 			// waiting for reply packets
 			MessageBroker broker = new MessageBroker(this, hook_);
-
-			// Signal to the client that we are ready to receive reply packets
-			barrier_.releaseAll();
 
 			while (true) {
 				DatagramPacket packet = new DatagramPacket(new byte[2048], 2048);
@@ -54,8 +53,8 @@ public class PackageListenerThread extends Thread implements
 
 	@Override
 	public synchronized void OnNewConnectionReply(int newConnectionId) {
-		lastConnectionId_ = newConnectionId;
-
-		barrier_.releaseAll();
+		//lastConnectionId_ = newConnectionId;
+		client.setConnected(true);
+		//barrier_.releaseAll();
 	}
 }

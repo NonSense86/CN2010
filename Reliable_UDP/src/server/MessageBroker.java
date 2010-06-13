@@ -1,94 +1,125 @@
 package server;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
-import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 
-import protokoll.DatagramPacketTracer;
 import protokoll.RUDPPacket;
 import protokoll.RUDPPacketFactory;
+import protokoll.RemoteMachine;
+
+import common.Msg;
+import common.MsgType;
 
 
 public class MessageBroker {
 
-	private ConnectionManager connectionManager_;
-	private ServerInstance serverInstance_;
+	private ConnectionManager cm;
+	private ServerInstance serverInstance;
+	private List<String> serverList;
+	
 
 	public MessageBroker(ServerInstance serverInstance) {
-		this.connectionManager_ = new ConnectionManager();
-		this.serverInstance_ = serverInstance;
+		this.cm = new ConnectionManager();
+		this.serverInstance = serverInstance;
+		serverList = new ArrayList<String>();
+		fillServerList();		
+	}
+	
+	private void fillServerList() {
+		for(RemoteMachine rm : serverInstance.getServers()) {
+			serverList.add(rm.toString());
+		}
 	}
 
-	public synchronized void ProceedPacket(DatagramPacket packet)
+	public synchronized void processPacket(DatagramPacket packet)
 			throws IOException {
 
-		RUDPPacket rudpPacket = new RUDPPacket();
-		rudpPacket.decodePackage(packet.getData());
+		RUDPPacket rudpPacket = new RUDPPacket(packet);
 
 		/* DEBUG */
-		DatagramPacketTracer.TraceDatagramPacket(packet);
-		System.out.println(rudpPacket);
+		//DatagramPacketTracer.TraceDatagramPacket(packet);
+		//System.out.println(rudpPacket);
 		/* DEBUG END */
 
-		/**
-		 * if SYN = true, ACK = false and connectionid = 0 the client wants a
-		 * new connection
-		 */
-		if (rudpPacket.getIsSyn() == true && rudpPacket.getIsAck() == false
-				&& rudpPacket.getIsConnection() == false) {
+		// Connection request
+		if (rudpPacket.getIsSyn() == true && rudpPacket.getIsAck() == false && rudpPacket.getIsConnection() == false) {
 
-			System.out.println(packet.getPort());
-			ProceedNewConnectionRequest(rudpPacket, packet.getAddress(), packet.getPort());
+			//System.out.println(packet.getPort());
+			System.out.println("New connection from: " + packet.getPort());
+			processNewConnectionRequest(rudpPacket);
+		} else if (rudpPacket.getIsAck() && !rudpPacket.getIsSyn() && rudpPacket.getIsNull()) {
+			processNewConnectionReply(rudpPacket);
+		// Keepalive packet
+		} else if (rudpPacket.getIsNull() && !rudpPacket.getIsAck()) {
+			processKeepalivePacket(rudpPacket);
+		// Payload packet
+		} else if (!rudpPacket.getIsNull() && rudpPacket.getIsConnection() && !rudpPacket.getIsAck()) {
+			processPayloadPacket(rudpPacket);
 		}
+		
+		serverInstance.getPacketTransmission().OnPacketReceived(rudpPacket);
 
-		/**
-		 * if NULL = true client wants to signal that he is alive - so
-		 * proceeding the payload is not necessary
-		 */
-		if (rudpPacket.getIsNull() == true && rudpPacket.getIsConnection()) {
-			ProceedKeepalivePacket(rudpPacket, packet.getAddress());
-		}
+		
 
-		/**
-		 * if SYN = false, ACK = false, NULL = false and connection = true, the
-		 * client sends a payload message
-		 */
-		if (rudpPacket.getIsSyn() == false && rudpPacket.getIsAck() == false
-				&& rudpPacket.getIsConnection() == true) {
-			ProceedPayloadPacket(rudpPacket, packet.getAddress());
-		}
+		
 	}
 
-	private void ProceedNewConnectionRequest(RUDPPacket rudpPacket,
-			InetAddress client, int clientListenPort) throws NumberFormatException, IOException {
-
-		/* register the client connection for further use */
-		ConnectionInstance connectionInstance = connectionManager_
-				.RegisterNewClientConnection(client, clientListenPort);
-
+	private void processNewConnectionRequest(RUDPPacket rudpPacket) throws NumberFormatException, IOException {
+		String hostport = rudpPacket.getSender().toString();
+		if(serverList.contains(hostport))
+			cm.addServer(rudpPacket.getSender());
+		else
+			cm.addClient(rudpPacket.getSender());
+	
 		/* reply with connection reply */
-		RUDPPacket replyPacket = RUDPPacketFactory.createConnectionReplyPacket(
-				connectionInstance.getConnectionId(),
-				rudpPacket.getSeqNumber() + 1);
-
-		serverInstance_.getPacketTansmission().SendPacket(replyPacket,
-				connectionInstance.getClientAddress(),
-				connectionInstance.getClientPort());
-
+		RUDPPacket replyPacket = RUDPPacketFactory.createConnectionReplyPacket(rudpPacket.getSender());
+		
+		serverInstance.getPacketTransmission().sendPacket(replyPacket);
+	}
+	
+	private void processNewConnectionReply(RUDPPacket rudpPacket) {
+		String hostport = rudpPacket.getSender().toString();
+		if(serverList.contains(hostport))
+			cm.addServer(rudpPacket.getSender());
 	}
 
-	private void ProceedKeepalivePacket(RUDPPacket rudpPacket,
-			InetAddress client) {
-
+	private void processKeepalivePacket(RUDPPacket rudpPacket) {
+		String hostport = rudpPacket.getSender().toString();
+		if(serverList.contains(hostport))
+			cm.updateServer(hostport);
+		else
+			cm.updateClient(hostport);
 	}
 
-	private void ProceedPayloadPacket(RUDPPacket rudpPacket, InetAddress client) {
-
+	private void processPayloadPacket(RUDPPacket rudpPacket) throws IOException {
+		ByteArrayInputStream bis = new ByteArrayInputStream(rudpPacket.getPayload());
+		ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(bis));
+		Msg msg = null;
 		try {
-			System.out.println(new String(rudpPacket.getPayload(), "UTF-8"));
-		} catch (UnsupportedEncodingException e) {
+			msg = (Msg)ois.readObject();
+		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		ois.close();
+		
+		if(msg.getMsgType() == MsgType.RENAME) {
+			if(cm.getClientNames().contains(msg.getPayload())) {
+				System.out.println(msg.getPayload());
+			} else {
+				
+			}
+				
+		}
 	}
+
+	public ConnectionManager getCm() {
+		return cm;
+	}
+	
+	
 }

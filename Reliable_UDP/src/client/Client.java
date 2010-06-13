@@ -11,11 +11,11 @@ public class Client {
 		ClientInstance instance = new ClientInstance(args);
 		//ClientInstance instance = new ClientInstance(InetAddress.getByName("localhost"), 4711);
 		
-		int connId = instance.OpenConnection();
+		//int connId = instance.OpenConnection();
 
-		System.out.println("*****" + connId);
+		//System.out.println("*****" + connId);
 		
-		instance.Send(connId, new String("Hallo Welt").getBytes("UTF-8"));
+		//instance.Send(connId, new String("Hallo Welt").getBytes("UTF-8"));
 	}
 
 }

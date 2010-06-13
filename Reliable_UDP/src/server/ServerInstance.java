@@ -7,54 +7,66 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
+import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.logging.Logger;
+
+import common.IKeepAlive;
+import common.KeepAliveThread;
 
 import protokoll.IPacketTransmissionNotifications;
-import protokoll.PacketTansmission;
-import protokoll.PacketTansmissionInfo;
+import protokoll.PacketTransmission;
+import protokoll.PacketTransmissionInfo;
+import protokoll.RUDPPacket;
+import protokoll.RUDPPacketFactory;
+import protokoll.RemoteMachine;
 
 
-public class ServerInstance implements IPacketTransmissionNotifications {
+public class ServerInstance implements IPacketTransmissionNotifications, IKeepAlive {
 
+	private static Logger logger = Logger.getLogger("ServerInstance");
 	private int port;
 	private String serverList;
-	private ArrayList<RemoteMachine> servers = new ArrayList<RemoteMachine>();
-	private PacketTansmission packetTansmission;
+	private List<RemoteMachine> servers;
+	
+	private PacketTransmission packetTansmission;
 	private DatagramSocket socket;
 	private String[] params;
+	private MessageBroker broker;
+	private Thread keepAliveThread;
+	private ExecutorService pool = Executors.newCachedThreadPool();
 
 	public ServerInstance(String[] params) {
 		this.params = params;
 		init();
 	}
 	
-	/*
-	public ServerInstance(int port) {
-		this.port = port;
-		packetTansmission = new PacketTansmission(this);
-	}
-	*/
-
-	public void StartListening() throws SocketException, IOException {
+	private void startListening() throws SocketException, IOException {
 		System.out.println("Server is now listing on port " + port);
 
 		socket = new DatagramSocket(port);	
+		packetTansmission = new PacketTransmission(this, socket);
 		
-		packetTansmission.setSocket(socket);
+		broker = new MessageBroker(this);
+		connectToServers();
+		keepAliveThread = new Thread(new KeepAliveThread(this));
+		keepAliveThread.start();
 		
-		MessageBroker broker = new MessageBroker(this);
-
 		while (true) {
 			DatagramPacket packet = new DatagramPacket(new byte[2048], 2048);
 			socket.receive(packet);			
-
-			broker.ProceedPacket(packet);
+			pool.execute(new MsgProcessor(broker, packet));
 		}
 	}
 	
 	private void init() {
+		servers = new ArrayList<RemoteMachine>();
 		try {
 			if (params.length == 0) {
 				System.out.println("Invalid argument count");
@@ -68,12 +80,29 @@ public class ServerInstance implements IPacketTransmissionNotifications {
 					servers.add(new RemoteMachine(params[i]));
 				}	
 			}
+			startListening();
 		} catch (Exception e) {
 			System.out.println("Initialization failed");
 			e.printStackTrace();
 			System.exit(0);
 		}
-		packetTansmission = new PacketTansmission(this);
+		
+	}
+	
+	private void connectToServers() {
+		try {
+			for(RemoteMachine rm : servers) {
+				// Exclude self
+				if(!rm.toString().equals("127.0.0.1" + port)) {
+					RUDPPacket packet = RUDPPacketFactory.createConnectionRequestPacket(rm);
+					packetTansmission.sendPacket(packet);
+					logger.info("Connecting to " + rm.toString());
+					
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -128,10 +157,6 @@ public class ServerInstance implements IPacketTransmissionNotifications {
 		}
 	}
 	
-	public PacketTansmission getPacketTansmission() {
-		return this.packetTansmission;
-	}
-
 	@Override
 	public void OnDuplicatePacket() {
 		// TODO Auto-generated method stub
@@ -139,7 +164,7 @@ public class ServerInstance implements IPacketTransmissionNotifications {
 	}
 
 	@Override
-	public void OnPacketACKMissing(PacketTansmissionInfo info) {
+	public void OnPacketACKMissing(PacketTransmissionInfo info) {
 		// TODO Auto-generated method stub
 		
 	}
@@ -148,5 +173,21 @@ public class ServerInstance implements IPacketTransmissionNotifications {
 	public void OnPacketWrongOrder() {
 		// TODO Auto-generated method stub
 		
+	}
+
+	public List<RemoteMachine> getServers() {
+		return servers;
+	}
+
+	@Override
+	public List<RemoteMachine> getActiveConnections() {
+		return new ArrayList<RemoteMachine>(broker.getCm().getServers().values());
+	}
+
+	@Override
+	public PacketTransmission getPacketTransmission() {
+		return packetTansmission;
 	}	
+	
+	
 }

@@ -1,43 +1,47 @@
 package client;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
-import protokoll.Barrier;
 import protokoll.IPacketTransmissionNotifications;
-import protokoll.PacketTansmission;
-import protokoll.PacketTansmissionInfo;
+import protokoll.PacketTransmission;
+import protokoll.PacketTransmissionInfo;
 import protokoll.RUDPPacket;
 import protokoll.RUDPPacketFactory;
-import server.RemoteMachine;
+import protokoll.RemoteMachine;
 
-public class ClientInstance implements IPacketTransmissionNotifications {
+import common.IKeepAlive;
+import common.KeepAliveThread;
+import common.Msg;
+import common.MsgFactory;
+
+public class ClientInstance implements IPacketTransmissionNotifications, IKeepAlive {
 
 	private String[] params;
 	private int port;
+	private List<RemoteMachine> servers;
 	private RemoteMachine server;
 	private PackageListenerThread packageListenerThread;
-	private Barrier barrier;
-	private PacketTansmission packetTansmission;
+	private Thread pollerThread;
+	private PacketTransmission packetTransmission;
 	private DatagramSocket clientSocket;	
+	private boolean connected;
+	private Thread keepAliveThread;
+	private String name;
+	BufferedReader in;
 
 	public ClientInstance(String[] params) {
 		this.params = params;
+		connected = false;
+		servers = new ArrayList<RemoteMachine>();
 		init();
-		barrier = new Barrier();
-		packetTansmission = new PacketTansmission(this);		
+				
 	}
-
-	/*
-	public ClientInstance(InetAddress host, int port) {
-		this();
-
-		this.host = host;
-		this.port = port;
-	}
-	*/
 	
 	private void init() {
 		try {
@@ -46,25 +50,27 @@ public class ClientInstance implements IPacketTransmissionNotifications {
 			} else if (params.length == 2) {
 				port = Integer.parseInt(params[0]);
 				server = new RemoteMachine(params[1]);
+				servers.add(server);
 			} else {
 				System.out.println("Invalid argument count");
 				System.out.println("USAGE: <myPort> <serverHost:serverPort>");
 				System.exit(0);
-			}
-			
+			}		
+			openConnection();
 			
 		} catch (Exception e) {
 			System.out.println("Initialization failed");
 			e.printStackTrace();
 			System.exit(0);
 		}
+
 	}
 
-	public int OpenConnection() throws IOException {
+	private int openConnection() throws IOException {
 		
 		clientSocket = new DatagramSocket(port);
+		packetTransmission = new PacketTransmission(this, clientSocket);
 		
-		packetTansmission.setSocket(clientSocket);
 		
 		/*
 		 * First - before we send connection request - make sure that we can
@@ -72,37 +78,52 @@ public class ClientInstance implements IPacketTransmissionNotifications {
 		 * listen on
 		 */
 
-		packageListenerThread = new PackageListenerThread(barrier, packetTansmission, clientSocket);
+		packageListenerThread = new PackageListenerThread(this);
 		packageListenerThread.start();
 
-		/* Block until server port is started */
-		barrier.block();
 
 		/* Now send the connection request to the server */
-		RUDPPacket packet = RUDPPacketFactory
-				.createConnectionRequestPacket();
-
-		packetTansmission.SendPacket(packet, server.getHost(), server.getPort());
-
-		/* Waiting for the server reply and return the connection id */
-		barrier.block();
-
+		RUDPPacket packet = RUDPPacketFactory.createConnectionRequestPacket(server);
+		packetTransmission.sendPacket(packet);
+		while(!connected) {
+			System.out.println("Connecting...");
+			try {
+				Thread.sleep(3000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		System.out.println("Connected!");
+		keepAliveThread = new Thread(new KeepAliveThread(this));
+		keepAliveThread.start();
+		in = new BufferedReader(new InputStreamReader(System.in));
+		setName();
+		pollerThread = new Thread(new Poller(this));
+		pollerThread.start();
+		
 		return packageListenerThread.getLastConnectionId();
 	}
-
-	/**
-	 * Function sends a packet to the server. The function blocks until
-	 * receiving an response from the server.
-	 * 
-	 * @param payload
-	 * @return
-	 * @throws IOException
-	 */
-	public void Send(int connectionId, byte[] payload) throws IOException {
-		RUDPPacket packet = RUDPPacketFactory.createPayloadPacket(connectionId,
-			payload);
-
-		packetTansmission.SendPacket(packet, server.getHost(), server.getPort());
+	
+	private void setName() {
+		System.out.println("Set your nickname:");
+		while(name == null) {
+			try {
+				String input = "";
+				input = in.readLine();
+				input = input.trim();
+				if(input.length() == 0) {
+					System.out.println("The name can not be empty");
+				} else {
+					Msg msg = MsgFactory.createRenameMsg(input, null);
+					RUDPPacket packet = RUDPPacketFactory.createPayloadPacket(server, msg);
+					packetTransmission.sendPacket(packet);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
 	}
 
 	/**
@@ -110,13 +131,17 @@ public class ClientInstance implements IPacketTransmissionNotifications {
 	 * connection is down or packet got lost
 	 */
 	@Override
-	public void OnPacketACKMissing(PacketTansmissionInfo info) {
+	public void OnPacketACKMissing(PacketTransmissionInfo info) {
 		/* Unblock all who are waiting for the ACK */
-		barrier.releaseAll();
+		//barrier.releaseAll();
 
-		System.out.println("***** Transmission: ACK missing: SEQ="
+		if(info.getSeqNumber() == 0) {
+			System.out.println("Connecting to server ...");
+		} else {
+			System.out.println("***** Transmission: ACK missing: SEQ="
 				+ info.getSeqNumber() + " SENT ON="
 				+ info.getTransmissionDate().toString());
+		}
 	}
 
 	/**
@@ -147,6 +172,7 @@ public class ClientInstance implements IPacketTransmissionNotifications {
 				properties.load(is);
 				port = Integer.parseInt(properties.getProperty("port"));
 				server = new RemoteMachine(properties.getProperty("hostPort"));
+				servers.add(server);
 								
 			} catch (Exception e) {
 				throw new Exception();
@@ -162,4 +188,35 @@ public class ClientInstance implements IPacketTransmissionNotifications {
 			System.exit(0);
 		}
 	}
+
+	public boolean isConnected() {
+		return connected;
+	}
+
+	public void setConnected(boolean connected) {
+		this.connected = connected;
+	}
+
+	public DatagramSocket getClientSocket() {
+		return clientSocket;
+	}
+
+	@Override
+	public PacketTransmission getPacketTransmission() {
+		return packetTransmission;
+	}
+
+	public List<RemoteMachine> getServers() {
+		return servers;
+	}
+
+	@Override
+	public List<RemoteMachine> getActiveConnections() {
+		return servers;
+	}
+
+
+	
+	
+	
 }

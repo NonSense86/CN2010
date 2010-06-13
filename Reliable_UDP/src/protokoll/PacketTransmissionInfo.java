@@ -2,16 +2,16 @@ package protokoll;
 
 import java.util.Date;
 
-public class PacketTansmissionInfo {
+public class PacketTransmissionInfo {
 	private int seqNumber_;	
 	private Date transmissionDate_;
 	
-	public PacketTansmissionInfo(int seqNumber, Date transmissionDate) {
+	public PacketTransmissionInfo(int seqNumber, Date transmissionDate) {
 		this.seqNumber_ = seqNumber;
 		this.transmissionDate_ = transmissionDate;
 	}
 	
-	public PacketTansmissionInfo(PacketTansmissionInfo copy) {
+	public PacketTransmissionInfo(PacketTransmissionInfo copy) {
 		this.seqNumber_ = copy.seqNumber_;
 		this.transmissionDate_ = new Date(copy.transmissionDate_.getTime());
 	}
