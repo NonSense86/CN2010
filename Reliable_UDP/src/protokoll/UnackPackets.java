@@ -19,6 +19,9 @@ public class UnackPackets extends Hashtable<String, Vector<RUDPPacket>> {
 			if(i < 5) {
 				packet.setResendCount(i + 1);
 				v.add(packet);
+			} else {
+				System.out.println("Packet:" + packet.getSeqNumber() + " for " + packet.getReceiver().toString() +
+						" not sent after 5 retries.");
 			}
 		}
 		

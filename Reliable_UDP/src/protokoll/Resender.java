@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 public class Resender implements Runnable {
 
 	private static Logger logger = Logger.getLogger("Resender");
-	private static final long SLEEP = 3000;
+	private static final long SLEEP = 1000;
 	
 	private UnackPackets packets;
 	private PacketTransmission pt;

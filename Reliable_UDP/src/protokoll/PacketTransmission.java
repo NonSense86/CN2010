@@ -6,12 +6,14 @@ import java.net.DatagramSocket;
 import java.util.Collection;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Random;
 import java.util.Vector;
 import java.util.logging.Logger;
 
 public class PacketTransmission implements
 		IPacketTansmissionHook, IPacketTransmission {
 
+	private static float LOST_PROBABILITY = 1.0f;
 	private static Logger logger = Logger.getLogger("PacketTransmission");
 	private Map<String, Conversation> conversations;
 	private UnackPackets unackPackets;
@@ -20,10 +22,13 @@ public class PacketTransmission implements
 	private DatagramSocket socket;
 	
 	private Thread resender;
+	
+	boolean send = true;
 
-	public PacketTransmission(IPacketTransmissionNotifications client, DatagramSocket socket) {
+	public PacketTransmission(IPacketTransmissionNotifications client, DatagramSocket socket, float probability) {
 		this.client = client;
 		this.socket = socket;
+		LOST_PROBABILITY = probability;
 		conversations = new Hashtable<String, Conversation>();
 		unackPackets = new UnackPackets();
 		resender = new Thread(new Resender(this));
@@ -66,9 +71,11 @@ public class PacketTransmission implements
 		RemoteMachine receiver = rudpPacket.getReceiver();
 		DatagramPacket packet = new DatagramPacket(payload, payload.length, receiver.getHost(), receiver.getPort());
 		
-		socket.send(packet);
-		
-		//System.out.println(rudpPacket.toString());
+		send = new Random().nextFloat() < LOST_PROBABILITY;
+		if(send)
+			socket.send(packet);
+		else
+			System.out.println("Sending of packet " + type + " for " + rudpPacket.getReceiver() + " failed.");
 	}
 	
 	public synchronized void resendPacket(RUDPPacket rudpPacket) throws IOException {
@@ -78,15 +85,20 @@ public class PacketTransmission implements
 		RemoteMachine receiver = rudpPacket.getReceiver();
 		DatagramPacket packet = new DatagramPacket(payload, payload.length, receiver.getHost(), receiver.getPort());
 		
-		socket.send(packet);
+		send = new Random().nextFloat() < LOST_PROBABILITY;
+		if(send)
+			socket.send(packet);
+		else
+			System.out.println("Resending of packet " + rudpPacket.getPacketType() + " for " + rudpPacket.getReceiver() + " failed.");
 	}
 
 	/**
 	 * If a packet is received remove it from the unacked elements
 	 */
 	@Override
-	public synchronized void OnPacketReceived(RUDPPacket rudpPacket) {
-
+	public synchronized boolean onPacketReceived(RUDPPacket rudpPacket) {
+		boolean ignore = false;
+		
 		PacketType type = rudpPacket.getPacketType();
 		// If ack packet
 		if(type == PacketType.CON_ACCEPT || type == PacketType.PAYLOAD_ACK) {
@@ -105,14 +117,14 @@ public class PacketTransmission implements
 			}
 			int seqNumber = rudpPacket.getSeqNumber();
 			if (seqNumber > c.getAwaitingSeqNumber()) {
-				client.OnPacketWrongOrder();
+				client.onPacketWrongOrder();
 				c.setAwaitingSeqNumber(seqNumber + 1);
 			} else if(seqNumber < c.getAwaitingSeqNumber()) {
 				if(c.getSequenceNumbers().contains(seqNumber)) {
-					client.OnDuplicatePacket();
-					return;
+					client.onDuplicatePacket();
+					ignore = true;
 				} else
-					client.OnPacketWrongOrder();
+					client.onPacketWrongOrder();
 			} else {
 				c.setAwaitingSeqNumber(seqNumber + 1);
 			}
@@ -128,6 +140,8 @@ public class PacketTransmission implements
 			}
 			
 		}
+		
+		return ignore;
 		
 		// Ignore others (keepalives, pollings ...)
 

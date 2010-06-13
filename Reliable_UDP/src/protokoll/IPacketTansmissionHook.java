@@ -1,5 +1,5 @@
 package protokoll;
 
 public interface IPacketTansmissionHook {
-	void OnPacketReceived(RUDPPacket rudpPacket);
+	boolean onPacketReceived(RUDPPacket rudpPacket);
 }

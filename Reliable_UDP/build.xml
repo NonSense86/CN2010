@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="Computer Networks 1" default="compile" basedir=".">
+
+    <target name="init" description="Initialize settings.">
+        <property name="src.dir" value="src"/>
+        <property name="build.dir" value="build"/>
+    	<property name="serverProp1" value="server1.properties"/>
+    	<property name="serverProp2" value="server2.properties"/>
+    	<property name="clientProp1" value="client1.properties"/>
+    	<property name="clientProp2" value="client2.properties"/>
+    	<property name="clientProp3" value="client3.properties"/>
+    	<property name="clientProp4" value="client4.properties"/>
+    </target>
+	
+	<path id="project.classpath" >
+	    <pathelement location="${build.dir}"/>
+	</path>
+   
+    <target name="compile" depends="init" description="Compile project.">
+        <mkdir dir="${build.dir}"/>
+        <javac srcdir="${src.dir}" destdir="${build.dir}" classpathref="project.classpath" debug="true" deprecation="true" includeantruntime="false"/>
+        <copy todir="${build.dir}">
+            <fileset dir="${src.dir}" excludes="**/*.java"/>
+        </copy>
+    </target>
+    
+    <target name="run-server1" depends="compile" description="Run project.">
+        <java classname="server.Server" fork="true" classpathref="project.classpath">
+        	<sysproperty key="serverProp1" value="${serverProp1}"/>
+        </java>    	
+    </target>
+	
+	<target name="run-server2" depends="compile" description="Run project.">
+	    <java classname="server.Server" fork="true" classpathref="project.classpath"/>
+	</target>
+	
+	<target name="run-client1" depends="compile" description="Run project.">
+	    <java classname="client.Client" fork="true" classpathref="project.classpath"/>
+	</target>
+	
+	<target name="run-client2" depends="compile" description="Run project.">
+	    <java classname="client.Client" fork="true" classpathref="project.classpath"/>
+	</target>
+	
+	<target name="run-client3" depends="compile" description="Run project.">
+	    <java classname="client.Client" fork="true" classpathref="project.classpath"/>
+	</target>
+	
+	<target name="run-client4" depends="compile" description="Run project.">
+	    <java classname="client.Client" fork="true" classpathref="project.classpath"/>
+	</target>
+    
+    <target name="clean" depends="init" description="Clean build products.">
+        <delete dir="${build.dir}"/>
+    </target>
+</project>

@@ -31,6 +31,12 @@ public class MessageBroker {
 		RUDPPacket rudpPacket = new RUDPPacket(packet);
 
 		PacketType type = rudpPacket.getPacketType();
+		
+		/* inform listener that we received an package */
+		// If true, ignore because its duplicate
+		if(hook_.onPacketReceived(rudpPacket))
+			return;
+		
 		/**
 		 * If ACK = true, SYN = false, NULL = true we got a connection reply
 		 * from the server
@@ -42,8 +48,7 @@ public class MessageBroker {
 		} else if (type == PacketType.PAYLOAD)
 			processPayloadPacket(rudpPacket);
 		
-		/* inform listener that we received an package */
-		hook_.OnPacketReceived(rudpPacket);
+		
 			
 	}
 	

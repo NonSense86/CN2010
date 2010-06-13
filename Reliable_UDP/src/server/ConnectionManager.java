@@ -76,8 +76,8 @@ public class ConnectionManager {
 		if(clients.get(hostport) == null) {
 			clients.put(hostport, client);
 			logger.info("Client " + hostport + " added");
-		} else
-			logger.warning("Client " + hostport + " already added");
+		} //else
+			//logger.warning("Client " + hostport + " already added");
 			
 	}
 	
@@ -92,8 +92,8 @@ public class ConnectionManager {
 		if(servers.get(hostport) == null) {
 			servers.put(hostport, server);
 			logger.info("Server " + hostport  +" added");
-		} else
-			logger.warning("Server " + hostport + " already added");
+		} //else
+			//logger.warning("Server " + hostport + " already added");
 	}
 	
 	public void removeServer(String hostport) {
@@ -109,11 +109,15 @@ public class ConnectionManager {
 	}
 	
 	public void updateClient(String hostport) {
-		clients.get(hostport).setLastTime(System.currentTimeMillis());
+		RemoteMachine client = clients.get(hostport);
+		if(client != null)
+			clients.get(hostport).setLastTime(System.currentTimeMillis());
 	}
 	
 	public void updateServer(String hostport) {
-		servers.get(hostport).setLastTime(System.currentTimeMillis());
+		RemoteMachine server = servers.get(hostport);
+		if(server != null)
+			servers.get(hostport).setLastTime(System.currentTimeMillis());
 	}
 
 	// GET/SET

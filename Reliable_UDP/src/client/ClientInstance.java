@@ -40,8 +40,9 @@ public class ClientInstance implements IPacketTransmissionNotifications, IKeepAl
 	private boolean nameChecked;
 	private Thread keepAliveThread;
 	private String name;
-	BufferedReader in;
+	private BufferedReader in;
 	private Map<String, Command> commands;
+	private float probability;
 
 	public ClientInstance(String[] params) {
 		this.params = params;
@@ -84,7 +85,7 @@ public class ClientInstance implements IPacketTransmissionNotifications, IKeepAl
 	private int openConnection() throws IOException {
 		
 		clientSocket = new DatagramSocket(port);
-		packetTransmission = new PacketTransmission(this, clientSocket);
+		packetTransmission = new PacketTransmission(this, clientSocket, probability);
 		
 		
 		/*
@@ -186,34 +187,18 @@ public class ClientInstance implements IPacketTransmissionNotifications, IKeepAl
 		
 	}
 
-	/**
-	 * Called from the transmission class if an ACK packet is missing Reason:
-	 * connection is down or packet got lost
-	 */
-	@Override
-	public void OnPacketACKMissing(PacketTransmissionInfo info) {
-		/* Unblock all who are waiting for the ACK */
-		//barrier.releaseAll();
-
-		if(info.getSeqNumber() == 0) {
-			System.out.println("Connecting to server ...");
-		} else {
-			System.out.println("***** Transmission: ACK missing: SEQ="
-				+ info.getSeqNumber() + " SENT ON="
-				+ info.getTransmissionDate().toString());
-		}
-	}
+	
 
 	/**
 	 * Called from the transmission class in the packet order is wrong
 	 */
 	@Override
-	public void OnPacketWrongOrder() {
+	public void onPacketWrongOrder() {
 		System.out.println("***** Transmission: Packet wrong order");
 	}
 
 	@Override
-	public void OnDuplicatePacket() {
+	public void onDuplicatePacket() {
 		System.out.println("***** Transmission: Packet duplicates");
 
 	}
@@ -233,6 +218,7 @@ public class ClientInstance implements IPacketTransmissionNotifications, IKeepAl
 				port = Integer.parseInt(properties.getProperty("port"));
 				server = new RemoteMachine(properties.getProperty("hostPort"));
 				servers.add(server);
+				probability = Float.parseFloat(properties.getProperty("probability"));
 								
 			} catch (Exception e) {
 				throw new Exception();

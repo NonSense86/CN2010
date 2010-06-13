@@ -40,6 +40,7 @@ public class ServerInstance implements IPacketTransmissionNotifications, IKeepAl
 	private String[] params;
 	private MessageBroker broker;
 	private Thread keepAliveThread;	
+	private float probability;
 
 	public ServerInstance(String[] params) {
 		this.params = params;
@@ -50,7 +51,7 @@ public class ServerInstance implements IPacketTransmissionNotifications, IKeepAl
 		System.out.println("Server is now listing on port " + port);
 
 		socket = new DatagramSocket(port);	
-		packetTansmission = new PacketTransmission(this, socket);
+		packetTansmission = new PacketTransmission(this, socket, probability);
 		
 		broker = new MessageBroker(this);
 		connectToServers();
@@ -119,6 +120,7 @@ public class ServerInstance implements IPacketTransmissionNotifications, IKeepAl
 				properties.load(is);
 				port = Integer.parseInt(properties.getProperty("port"));
 				serverList = properties.getProperty("serverList");
+				probability = Float.parseFloat(properties.getProperty("probability"));
 								
 			} catch (Exception e) {
 				throw new Exception();
@@ -158,20 +160,14 @@ public class ServerInstance implements IPacketTransmissionNotifications, IKeepAl
 	}
 	
 	@Override
-	public void OnDuplicatePacket() {
-		// TODO Auto-generated method stub
+	public void onDuplicatePacket() {
+		System.out.println("***** Transmission: Packet duplicates");
 		
 	}
 
 	@Override
-	public void OnPacketACKMissing(PacketTransmissionInfo info) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void OnPacketWrongOrder() {
-		// TODO Auto-generated method stub
+	public void onPacketWrongOrder() {
+		System.out.println("***** Transmission: Packet wrong order");
 		
 	}
 

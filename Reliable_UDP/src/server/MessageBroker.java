@@ -47,6 +47,10 @@ public class MessageBroker {
 		RUDPPacket rudpPacket = new RUDPPacket(packet);
 		PacketType type = rudpPacket.getPacketType();
 		
+		// If true, ignore because it's duplicate
+		if(serverInstance.getPacketTransmission().onPacketReceived(rudpPacket))
+			return;
+		
 		// Connection request
 		if (type == PacketType.CON_CREATE) {
 
@@ -66,7 +70,7 @@ public class MessageBroker {
 			processPollingPacket(rudpPacket);
 		}
 		
-		serverInstance.getPacketTransmission().OnPacketReceived(rudpPacket);
+		
 	}
 	
 	private void processPollingPacket(RUDPPacket rudpPacket) throws IOException {
