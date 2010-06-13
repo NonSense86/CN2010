@@ -15,6 +15,7 @@ import protokoll.RUDPPacketFactory;
 import protokoll.RemoteMachine;
 
 import common.Msg;
+import common.MsgFactory;
 import common.MsgType;
 
 
@@ -62,10 +63,6 @@ public class MessageBroker {
 		}
 		
 		serverInstance.getPacketTransmission().OnPacketReceived(rudpPacket);
-
-		
-
-		
 	}
 
 	private void processNewConnectionRequest(RUDPPacket rudpPacket) throws NumberFormatException, IOException {
@@ -108,8 +105,26 @@ public class MessageBroker {
 		ois.close();
 		
 		if(msg.getMsgType() == MsgType.RENAME) {
-			pool.execute(new MsgProcessor(serverInstance, msg, rudpPacket.getSender()));
-				
+			pool.execute(new MsgProcessor(serverInstance, msg, rudpPacket.getSender()));	
+		}
+		
+		if(msg.getMsgType() == MsgType.CHECKNAME) {
+			Msg m = MsgFactory.createCheckNameReplyMsg(msg.getPayload());
+			System.out.println("Checking name " +  msg.getPayload());
+			if(cm.getClientNames().contains(msg.getPayload()) || cm.getCheckedNames().get(msg.getPayload())) {
+				m.setAvailable(false);
+			} else {
+				m.setAvailable(true);
+			}
+			System.out.println("name avaialble: " + m.isAvailable());
+			RUDPPacket p = RUDPPacketFactory.createPayloadPacket(rudpPacket.getSender(), m);
+			serverInstance.getPacketTransmission().sendPacket(p);
+		}
+		
+		if(msg.getMsgType() == MsgType.CHECKNAME_REPLY) {
+			if(!msg.isAvailable()) {
+				cm.getCheckedNames().put(msg.getPayload(), msg.isAvailable());
+			}
 		}
 	}
 

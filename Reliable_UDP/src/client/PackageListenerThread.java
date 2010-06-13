@@ -55,4 +55,10 @@ public class PackageListenerThread extends Thread implements
 	public synchronized void onNewConnectionReply() {
 		client.setConnected(true);
 	}
+
+	@Override
+	public void onNameReply(Boolean nameChecked, String name) {
+		client.setName(name);
+		client.setNameChecked(nameChecked);
+	}
 }

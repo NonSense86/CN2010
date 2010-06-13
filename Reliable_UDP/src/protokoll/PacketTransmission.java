@@ -3,6 +3,7 @@ package protokoll;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.Collection;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Vector;
@@ -27,6 +28,13 @@ public class PacketTransmission implements
 		unackPackets = new UnackPackets();
 		resender = new Thread(new Resender(this));
 		resender.start();
+	}
+	
+	public synchronized void multiCastPacket(RUDPPacket packet, Collection<RemoteMachine> receivers) throws IOException {
+		for(RemoteMachine rm : receivers) {
+			packet.setReceiver(rm);
+			sendPacket(packet);
+		}
 	}
 	
 	public synchronized void sendPacket(RUDPPacket rudpPacket) throws IOException {
@@ -111,7 +119,7 @@ public class PacketTransmission implements
 			c.getSequenceNumbers().add(seqNumber);
 			
 			// Send ack
-			RUDPPacket packet = RUDPPacketFactory.createAckPacket(rudpPacket, c.getNextSeqNumber());
+			RUDPPacket packet = RUDPPacketFactory.createAckPacket(rudpPacket, seqNumber);
 			try {
 				sendPacket(packet);
 			} catch (IOException e) {

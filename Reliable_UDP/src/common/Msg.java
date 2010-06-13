@@ -21,9 +21,9 @@ public class Msg implements Serializable {
 		this.sender = name;
 	}
 	
-	public Msg(MsgType msgType, String name) {
+	public Msg(MsgType msgType, String payload) {
 		this.msgType = msgType;
-		this.sender = name;
+		this.payload = payload;
 	}
 
 	public MsgType getMsgType() {

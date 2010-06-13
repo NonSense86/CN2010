@@ -5,7 +5,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.DatagramSocket;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import protokoll.IPacketTransmissionNotifications;
@@ -14,6 +16,10 @@ import protokoll.PacketTransmissionInfo;
 import protokoll.RUDPPacket;
 import protokoll.RUDPPacketFactory;
 import protokoll.RemoteMachine;
+import cmd.Command;
+import cmd.MulticastCmd;
+import cmd.RenameCmd;
+import cmd.UnicastCmd;
 
 import common.IKeepAlive;
 import common.KeepAliveThread;
@@ -31,16 +37,18 @@ public class ClientInstance implements IPacketTransmissionNotifications, IKeepAl
 	private PacketTransmission packetTransmission;
 	private DatagramSocket clientSocket;	
 	private boolean connected;
+	private boolean nameChecked;
 	private Thread keepAliveThread;
 	private String name;
 	BufferedReader in;
+	private Map<String, Command> commands;
 
 	public ClientInstance(String[] params) {
 		this.params = params;
 		connected = false;
 		servers = new ArrayList<RemoteMachine>();
-		init();
-				
+		commands = new Hashtable<String, Command>();
+		init();				
 	}
 	
 	private void init() {
@@ -55,7 +63,8 @@ public class ClientInstance implements IPacketTransmissionNotifications, IKeepAl
 				System.out.println("Invalid argument count");
 				System.out.println("USAGE: <myPort> <serverHost:serverPort>");
 				System.exit(0);
-			}		
+			}	
+			insertCommands();
 			openConnection();
 			
 		} catch (Exception e) {
@@ -64,6 +73,12 @@ public class ClientInstance implements IPacketTransmissionNotifications, IKeepAl
 			System.exit(0);
 		}
 
+	}
+	
+	private void insertCommands() {
+		commands.put("rename", new RenameCmd());
+		commands.put("unicast", new UnicastCmd());
+		commands.put("multicast", new MulticastCmd());
 	}
 
 	private int openConnection() throws IOException {
@@ -102,12 +117,42 @@ public class ClientInstance implements IPacketTransmissionNotifications, IKeepAl
 		pollerThread = new Thread(new Poller(this));
 		pollerThread.start();
 		
+		System.out.println("Type exit to end");
+		readInput();
+		System.out.println("Bye!");
+		System.exit(0);
+		
 		return packageListenerThread.getLastConnectionId();
 	}
 	
+	private void readInput() {
+		String[] args;
+		Command command;
+		
+		while (true) {
+			try {
+				String input = "";
+				input = in.readLine();
+				input = input.trim();
+				if (input.length() > 0) {
+					if(input.equalsIgnoreCase("exit"))
+						break;
+					args = generateArgs(input);
+					command = commands.get(args[0]);
+					if (command == null)
+						System.out.println("Invalid command: " + args[0]);
+					else
+						command.execute(this, args);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	private void setName() {
-		System.out.println("Set your nickname:");
 		while(name == null) {
+			System.out.println("Set your nickname:");
 			try {
 				String input = "";
 				input = in.readLine();
@@ -119,11 +164,25 @@ public class ClientInstance implements IPacketTransmissionNotifications, IKeepAl
 					RUDPPacket packet = RUDPPacketFactory.createPayloadPacket(server, msg);
 					packetTransmission.sendPacket(packet);
 					System.out.println("Checking name...");
+					while(!nameChecked) {
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					if (name == null) {
+						System.out.println("This name is unavailable");
+						nameChecked = false;
+					}
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
+		System.out.println("Name set to: " + name);
+		nameChecked = false;
 		
 	}
 
@@ -189,6 +248,51 @@ public class ClientInstance implements IPacketTransmissionNotifications, IKeepAl
 			System.exit(0);
 		}
 	}
+	
+	/**
+	 * Generates arguments from the user input.
+	 * @param input String read from user
+	 * @return String array of arguments
+	 */
+	public static String[] generateArgs(String input) {
+		String[] split1 = input.split(" ");
+		List<String> list = new ArrayList<String>();
+		boolean flag = false;
+		String temp = "";
+		for (String s : split1) {
+			if (s.length() == 1) {
+				if (s.equals("\"")) {
+					flag = true;
+					temp += s;
+					continue;
+				}
+				list.add(s);					
+			} else if ((s.charAt(0) == '\"') && (s.charAt(s.length() - 1) == '\"')) {
+				s = s.substring(0, s.length());
+				list.add(s);
+			} else if ((s.charAt(0) == '\"') && !flag) {
+				flag = true;
+				s = s.substring(0, s.length());
+				temp += s;
+				temp += " ";
+				continue;
+			} else if ((s.charAt(s.length() - 1) == '\"') && flag) {
+				s = s.substring(0, s.length());
+				temp += s;
+				flag = false;
+				list.add(temp);
+				temp = "";
+				continue;
+			} else if (flag) {
+				temp += s;
+				temp += " ";
+				continue;
+			} else
+				list.add(s);
+		}
+		String[] args = list.toArray(new String[0]);
+		return args;
+	}
 
 	public boolean isConnected() {
 		return connected;
@@ -214,6 +318,24 @@ public class ClientInstance implements IPacketTransmissionNotifications, IKeepAl
 	@Override
 	public List<RemoteMachine> getActiveConnections() {
 		return servers;
+	}
+
+	public void setName(String name) {
+		if(name == null)
+			return;
+		this.name = name;
+	}
+
+	public void setNameChecked(boolean nameOK) {
+		this.nameChecked = nameOK;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public boolean isNameChecked() {
+		return nameChecked;
 	}
 
 

@@ -13,13 +13,13 @@ public class MsgFactory {
 	public static Msg createRenameMsg(String payload, String name) {
 		return new Msg(MsgType.RENAME, payload, name);
 	}
-	
-	public static Msg createTxtMsg(String payload, String name) {
-		return new Msg(MsgType.TXT, payload, name);
+		
+	public static Msg createCheckNameMsg(String payload) {
+		return new Msg(MsgType.CHECKNAME, payload);
 	}
 	
-	public static Msg createCheckNameMsg(String payload, String name) {
-		return new Msg(MsgType.CHECKNAME, payload, name);
+	public static Msg createCheckNameReplyMsg(String payload) {
+		return new Msg(MsgType.CHECKNAME_REPLY, payload);
 	}
 	
 }

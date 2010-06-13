@@ -33,6 +33,7 @@ public class ConnectionManager {
 	}
 	
 	public void removeClient(String hostport) {
+		clientNames.remove(clients.get(hostport).getName());
 		clients.remove(hostport);
 		logger.info("Client " + hostport + " removed");
 	}
@@ -53,7 +54,9 @@ public class ConnectionManager {
 	
 	public void renameClient(String hostport, String name) {
 		RemoteMachine rm = clients.get(hostport);
+		clientNames.remove(rm.getName());
 		rm.setName(name);
+		clientNames.add(name);
 	}
 	
 	public void updateClient(String hostport) {

@@ -14,8 +14,11 @@ public class ConnectionChecker implements Runnable {
 	public void run() {
 		while(true) {
 			for(String k : cm.getClients().keySet()) {
-				if(System.currentTimeMillis() - cm.getClients().get(k).getLastTime() > 10000)
+				if(System.currentTimeMillis() - cm.getClients().get(k).getLastTime() > 10000) {
+					// Remove name of the client
+					cm.getClientNames().remove(cm.getClients().get(k).getName());
 					cm.removeClient(k);
+				}
 			}
 			
 			for(String k : cm.getServers().keySet()) {

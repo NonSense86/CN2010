@@ -1,6 +1,12 @@
 package client;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
+
+import common.Msg;
+import common.MsgType;
 
 import protokoll.DatagramPacketTracer;
 import protokoll.IPacketTansmissionHook;
@@ -34,14 +40,32 @@ public class MessageBroker {
 			notificationClass_.onNewConnectionReply();
 			
 		} else if (type == PacketType.PAYLOAD)
-			processPayloadPacket(packet);
+			processPayloadPacket(rudpPacket);
 		
 		/* inform listener that we received an package */
 		hook_.OnPacketReceived(rudpPacket);
 			
 	}
 	
-	private synchronized void processPayloadPacket(DatagramPacket packet) {
+	private synchronized void processPayloadPacket(RUDPPacket packet) throws IOException {
+		// Get Msg object
+		ByteArrayInputStream bis = new ByteArrayInputStream(packet.getPayload());
+		ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(bis));
+		Msg msg = null;
+		try {
+			msg = (Msg)ois.readObject();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		ois.close();
 		
+		if(msg.getMsgType() == MsgType.RENAME) {
+			// If name ok
+			if(msg.isAvailable())
+				notificationClass_.onNameReply(true, msg.getPayload());
+			else
+				notificationClass_.onNameReply(true, null);
+		}
 	}
 }
