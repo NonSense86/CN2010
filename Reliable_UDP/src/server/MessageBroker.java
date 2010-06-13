@@ -6,7 +6,10 @@ import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import protokoll.PacketType;
 import protokoll.RUDPPacket;
 import protokoll.RUDPPacketFactory;
 import protokoll.RemoteMachine;
@@ -20,6 +23,7 @@ public class MessageBroker {
 	private ConnectionManager cm;
 	private ServerInstance serverInstance;
 	private List<String> serverList;
+	private ExecutorService pool = Executors.newCachedThreadPool();
 	
 
 	public MessageBroker(ServerInstance serverInstance) {
@@ -39,25 +43,21 @@ public class MessageBroker {
 			throws IOException {
 
 		RUDPPacket rudpPacket = new RUDPPacket(packet);
-
-		/* DEBUG */
-		//DatagramPacketTracer.TraceDatagramPacket(packet);
-		//System.out.println(rudpPacket);
-		/* DEBUG END */
+		PacketType type = rudpPacket.getPacketType();
 
 		// Connection request
-		if (rudpPacket.getIsSyn() == true && rudpPacket.getIsAck() == false && rudpPacket.getIsConnection() == false) {
+		if (type == PacketType.CON_CREATE) {
 
 			//System.out.println(packet.getPort());
 			System.out.println("New connection from: " + packet.getPort());
 			processNewConnectionRequest(rudpPacket);
-		} else if (rudpPacket.getIsAck() && !rudpPacket.getIsSyn() && rudpPacket.getIsNull()) {
+		} else if (type == PacketType.CON_ACCEPT) {
 			processNewConnectionReply(rudpPacket);
 		// Keepalive packet
-		} else if (rudpPacket.getIsNull() && !rudpPacket.getIsAck()) {
+		} else if (type == PacketType.KEEP_ALIVE) {
 			processKeepalivePacket(rudpPacket);
 		// Payload packet
-		} else if (!rudpPacket.getIsNull() && rudpPacket.getIsConnection() && !rudpPacket.getIsAck()) {
+		} else if (type == PacketType.PAYLOAD) {
 			processPayloadPacket(rudpPacket);
 		}
 		
@@ -108,11 +108,7 @@ public class MessageBroker {
 		ois.close();
 		
 		if(msg.getMsgType() == MsgType.RENAME) {
-			if(cm.getClientNames().contains(msg.getPayload())) {
-				System.out.println(msg.getPayload());
-			} else {
-				
-			}
+			pool.execute(new MsgProcessor(serverInstance, msg, rudpPacket.getSender()));
 				
 		}
 	}

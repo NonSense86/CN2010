@@ -15,6 +15,7 @@ public class ConnectionManager {
 	private Map<String, RemoteMachine> servers = new Hashtable<String, RemoteMachine>();
 	private Vector<String> clientNames = new Vector<String>();
 	private Thread connectionChecker;
+	private Map<String, Boolean> checkedNames = new Hashtable<String, Boolean>();
 	
 	public ConnectionManager() {
 		connectionChecker = new Thread(new ConnectionChecker(this));
@@ -76,6 +77,11 @@ public class ConnectionManager {
 	public Vector<String> getClientNames() {
 		return clientNames;
 	}
+
+	public Map<String, Boolean> getCheckedNames() {
+		return checkedNames;
+	}
+	
 	
 	
 }

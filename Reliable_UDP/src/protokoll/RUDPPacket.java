@@ -11,7 +11,6 @@ import java.net.DatagramPacket;
 public class RUDPPacket {
 	
 	// Not encoded!
-	private PacketType packetType;
 	private RemoteMachine sender;
 	private RemoteMachine receiver;
 	private int resendCount;
@@ -27,82 +26,15 @@ public class RUDPPacket {
 		this.receiver = receiver;
 	}
 	
-	private boolean IsSyn;
-
-	private boolean IsAck;
-
-	private boolean IsNull;
-
-	private boolean IsChecksum;
-	
-	private boolean IsConnection;
-
+	private PacketType packetType;
+		
 	private long checksum;
 
 	private int seqNumber;
 
-	private int ackNumber;
-
-	private int connectionId;	
-
 	private int payloadLength;
 
 	private byte[] payload;
-
-	/**
-	 * SYN
-	 */
-	public boolean getIsSyn() {
-		return IsSyn;
-	}
-
-	public void setIsSyn(boolean IsSyn) {
-		this.IsSyn = IsSyn;
-	}
-
-	/**
-	 * ACK
-	 */
-	public boolean getIsAck() {
-		return IsAck;
-	}
-
-	public void setIsAck(boolean IsAck) {
-		this.IsAck = IsAck;
-	}
-
-	/**
-	 * NULL
-	 */
-	public boolean getIsNull() {
-		return IsNull;
-	}
-
-	public void setIsNull(boolean IsNull) {
-		this.IsNull = IsNull;
-	}
-
-	/**
-	 * CHECKSUM
-	 */
-	public boolean getIsChecksum() {
-		return IsChecksum;
-	}
-
-	public void setIsChecksum(boolean IsChecksum) {
-		this.IsChecksum = IsChecksum;
-	}
-	
-	/**
-	 * CONNECTION
-	 */
-	public boolean getIsConnection() {
-		return IsConnection;
-	}
-
-	public void setIsConnection(boolean IsConnection) {
-		this.IsConnection = IsConnection;
-	}	
 
 	/**
 	 * checksum value
@@ -124,28 +56,6 @@ public class RUDPPacket {
 
 	public void setSeqNumber(int seqNumber) {
 		this.seqNumber = seqNumber;
-	}
-
-	/**
-	 * acknowledge number
-	 */
-	public int getAckNumber() {
-		return ackNumber;
-	}
-
-	public void setAckNumber(int ackNumber) {
-		this.ackNumber = ackNumber;
-	}
-
-	/**
-	 * connection number
-	 */
-	public int getConnectionId() {
-		return connectionId;
-	}
-
-	public void setConnectionId(int connectionId) {
-		this.connectionId = connectionId;
 	}
 
 	/**
@@ -203,26 +113,6 @@ public class RUDPPacket {
 		this.resendCount = resendCount;
 	}
 
-	@Override
-	public String toString() {
-		StringBuilder strBuilder = new StringBuilder();
-
-		strBuilder.append("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n");
-		strBuilder.append("SYN=" + getIsSyn() + "\n");
-		strBuilder.append("ACK=" + getIsAck() + "\n");
-		strBuilder.append("NULL=" + getIsNull() + "\n");
-		strBuilder.append("CHECKSUM=" + getIsChecksum() + "\n");
-		strBuilder.append("CONN=" + getIsConnection() + "\n");
-		strBuilder.append("\n");
-		strBuilder.append("CHECKSUM=" + getChecksum() + "\n");
-		strBuilder.append("SEQ=" + getSeqNumber() + "\n");
-		strBuilder.append("ACK=" + getAckNumber() + "\n");
-		strBuilder.append("CONNID=" + getConnectionId() + "\n");		
-		strBuilder.append("+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n");
-
-		return strBuilder.toString();
-	}
-
 	/**
 	 * Encodes a RUDP package. The result is written in to a byte array
 	 * 
@@ -238,22 +128,15 @@ public class RUDPPacket {
 		}
 		
 		/* CRC for this packet */
-		setChecksum(RUDPPacketCRC.GalculateCRCForPacket(this));
+		setChecksum(RUDPPacketCRC.calculateCRCForPacket(this));
 
 		/* write result to stream */
 		ByteArrayOutputStream buffStream = new ByteArrayOutputStream();
 		DataOutputStream outStream = new DataOutputStream(buffStream);
-
-		outStream.writeBoolean(getIsSyn());
-		outStream.writeBoolean(getIsAck());
-		outStream.writeBoolean(getIsNull());
-		outStream.writeBoolean(getIsChecksum());
-		outStream.writeBoolean(getIsConnection());
-
+		
+		outStream.writeUTF(packetType.toString());
 		outStream.writeLong(getChecksum());
-		outStream.writeInt(getSeqNumber());
-		outStream.writeInt(getAckNumber());
-		outStream.writeInt(getConnectionId());		
+		outStream.writeInt(getSeqNumber());	
 
 		outStream.writeInt(getPayloadLength());
 
@@ -271,16 +154,10 @@ public class RUDPPacket {
 				packagePayload);
 		DataInputStream inStream = new DataInputStream(buffStream);
 
-		setIsSyn(inStream.readBoolean());
-		setIsAck(inStream.readBoolean());
-		setIsNull(inStream.readBoolean());
-		setIsChecksum(inStream.readBoolean());
-		setIsConnection(inStream.readBoolean());
-
+		
+		setPacketType(PacketType.valueOf(inStream.readUTF()));
 		setChecksum(inStream.readLong());
-		setSeqNumber(inStream.readInt());
-		setAckNumber(inStream.readInt());
-		setConnectionId(inStream.readInt());			
+		setSeqNumber(inStream.readInt());			
 
 		setPayloadLength(inStream.readInt());
 

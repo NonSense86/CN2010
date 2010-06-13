@@ -38,7 +38,7 @@ public class PackageListenerThread extends Thread implements
 				DatagramPacket packet = new DatagramPacket(new byte[2048], 2048);
 				
 				socket_.receive(packet);
-				broker.ProceedPacket(packet);				
+				broker.processPacket(packet);				
 			}
 		} catch (SocketException e) {
 			e.printStackTrace();
@@ -52,9 +52,7 @@ public class PackageListenerThread extends Thread implements
 	}
 
 	@Override
-	public synchronized void OnNewConnectionReply(int newConnectionId) {
-		//lastConnectionId_ = newConnectionId;
+	public synchronized void onNewConnectionReply() {
 		client.setConnected(true);
-		//barrier_.releaseAll();
 	}
 }

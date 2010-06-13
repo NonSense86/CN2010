@@ -118,6 +118,7 @@ public class ClientInstance implements IPacketTransmissionNotifications, IKeepAl
 					Msg msg = MsgFactory.createRenameMsg(input, null);
 					RUDPPacket packet = RUDPPacketFactory.createPayloadPacket(server, msg);
 					packetTransmission.sendPacket(packet);
+					System.out.println("Checking name...");
 				}
 			} catch (IOException e) {
 				e.printStackTrace();

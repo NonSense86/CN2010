@@ -13,7 +13,7 @@ public class Msg implements Serializable {
 	private String payload;
 	private String sender;
 	private String receiver;
-	private boolean checked;
+	private boolean available;
 	
 	public Msg(MsgType msgType, String payload, String name) {
 		this.msgType = msgType;
@@ -50,12 +50,12 @@ public class Msg implements Serializable {
 		this.receiver = receiver;
 	}
 
-	public boolean isChecked() {
-		return checked;
+	public boolean isAvailable() {
+		return available;
 	}
 
-	public void setChecked(boolean checked) {
-		this.checked = checked;
+	public void setAvailable(boolean available) {
+		this.available = available;
 	}
 	
 	

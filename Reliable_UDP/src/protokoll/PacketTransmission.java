@@ -30,8 +30,10 @@ public class PacketTransmission implements
 	}
 	
 	public synchronized void sendPacket(RUDPPacket rudpPacket) throws IOException {
+		PacketType type = rudpPacket.getPacketType();
+		
 		// If payload packet
-		if(!rudpPacket.getIsNull()) {
+		if(type == PacketType.PAYLOAD) {
 			Conversation c = conversations.get(rudpPacket.getReceiver().toString());
 			if(c == null) {
 				c = new Conversation();
@@ -41,7 +43,7 @@ public class PacketTransmission implements
 		}
 		
 		// Save unack packet
-		if(rudpPacket.getIsSyn()) {
+		if(type == PacketType.PAYLOAD || type == PacketType.CON_CREATE) {
 			Vector<RUDPPacket> v = unackPackets.get(rudpPacket.getReceiver().toString());
 			if(v == null) {
 				v = new Vector<RUDPPacket>();
@@ -54,8 +56,7 @@ public class PacketTransmission implements
 		byte[] payload = rudpPacket.encodePackage();
 
 		RemoteMachine receiver = rudpPacket.getReceiver();
-		DatagramPacket packet = new DatagramPacket(payload, payload.length,
-				receiver.getHost(), receiver.getPort());
+		DatagramPacket packet = new DatagramPacket(payload, payload.length, receiver.getHost(), receiver.getPort());
 		
 		socket.send(packet);
 		
@@ -78,8 +79,9 @@ public class PacketTransmission implements
 	@Override
 	public synchronized void OnPacketReceived(RUDPPacket rudpPacket) {
 
-		// If ack
-		if(rudpPacket.getIsAck()) {
+		PacketType type = rudpPacket.getPacketType();
+		// If ack packet
+		if(type == PacketType.CON_ACCEPT || type == PacketType.PAYLOAD_ACK) {
 			Vector<RUDPPacket> v = unackPackets.get(rudpPacket.getSender().toString());
 			for(RUDPPacket p : v) {
 				if(p.getSeqNumber() == rudpPacket.getSeqNumber()) {
@@ -87,8 +89,8 @@ public class PacketTransmission implements
 					break;
 				}
 			}
-		// If Sync
-		} else if(!rudpPacket.getIsNull()) {				
+		// If Synchronized packet
+		} else if(type == PacketType.PAYLOAD) {				
 			Conversation c = conversations.get(rudpPacket.getSender().toString());
 			if (c == null) {
 				c = new Conversation();
@@ -108,6 +110,14 @@ public class PacketTransmission implements
 			}
 			c.getSequenceNumbers().add(seqNumber);
 			
+			// Send ack
+			RUDPPacket packet = RUDPPacketFactory.createAckPacket(rudpPacket, c.getNextSeqNumber());
+			try {
+				sendPacket(packet);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			
 		}
 		

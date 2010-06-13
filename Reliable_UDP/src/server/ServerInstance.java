@@ -39,8 +39,7 @@ public class ServerInstance implements IPacketTransmissionNotifications, IKeepAl
 	private DatagramSocket socket;
 	private String[] params;
 	private MessageBroker broker;
-	private Thread keepAliveThread;
-	private ExecutorService pool = Executors.newCachedThreadPool();
+	private Thread keepAliveThread;	
 
 	public ServerInstance(String[] params) {
 		this.params = params;
@@ -60,8 +59,9 @@ public class ServerInstance implements IPacketTransmissionNotifications, IKeepAl
 		
 		while (true) {
 			DatagramPacket packet = new DatagramPacket(new byte[2048], 2048);
-			socket.receive(packet);			
-			pool.execute(new MsgProcessor(broker, packet));
+			socket.receive(packet);	
+			broker.processPacket(packet);
+			//pool.execute(new MsgProcessor(broker, packet));
 		}
 	}
 	
@@ -187,7 +187,12 @@ public class ServerInstance implements IPacketTransmissionNotifications, IKeepAl
 	@Override
 	public PacketTransmission getPacketTransmission() {
 		return packetTansmission;
+	}
+
+	public MessageBroker getBroker() {
+		return broker;
 	}	
+	
 	
 	
 }
