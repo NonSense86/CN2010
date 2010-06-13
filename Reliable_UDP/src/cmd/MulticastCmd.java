@@ -25,6 +25,13 @@ public class MulticastCmd extends Command {
 			return;
 		}
 		
+		try {
+			Msg msg = MsgFactory.createMulticastMsg(args[1], client.getName());
+			RUDPPacket p = RUDPPacketFactory.createPayloadPacket(client.getServers().get(0), msg);
+			client.getPacketTransmission().sendPacket(p);
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

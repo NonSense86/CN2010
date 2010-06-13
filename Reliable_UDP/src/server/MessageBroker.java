@@ -164,6 +164,24 @@ public class MessageBroker {
 				}
 			}		
 		}
+		
+		if(msg.getMsgType() == MsgType.MULTICAST) {
+			// Resend local
+			cm.saveMsg(msg);
+			
+			// If from server, don't forward
+			if(cm.getServers().containsKey(rudpPacket.getSender().toString())) {
+				System.out.println("multicast received");
+				return;
+			}
+			
+			// If from client, forward to servers
+			if(cm.getClients().containsKey(rudpPacket.getSender().toString())) {
+				RUDPPacket p = RUDPPacketFactory.createPayloadPacket(null, msg);
+				serverInstance.getPacketTransmission().multiCastPacket(p, cm.getServers().values());
+				System.out.println("multicast forwarded");
+			}
+		}
 	}
 
 	public ConnectionManager getCm() {

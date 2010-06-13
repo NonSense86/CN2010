@@ -6,7 +6,7 @@ public class MsgFactory {
 		return new Msg(MsgType.UNICAST, payload, sender, receiver);
 	}
 	
-	public static Msg createMultiCastMsg(String payload, String sender) {
+	public static Msg createMulticastMsg(String payload, String sender) {
 		return new Msg(MsgType.MULTICAST, payload, sender);
 	}
 	

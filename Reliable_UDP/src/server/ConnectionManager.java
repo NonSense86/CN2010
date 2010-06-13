@@ -29,15 +29,30 @@ public class ConnectionManager {
 	}
 	
 	public synchronized void saveMsg(Msg msg) {
-		for(RemoteMachine rm : clients.values()) {
-			if(rm.getName().equals(msg.getReceiver())) {
+		// If receiver empty = Multicast
+		if(msg.getReceiver() == null) {
+			for (RemoteMachine rm : clients.values()) {
 				Vector<Msg> clientMsgs = messageStore.get(rm.toString());
+				// Don't send to itself
+				if(msg.getSender().equals(rm.getName()))
+					continue;
 				if(clientMsgs == null) {
 					clientMsgs = new Vector<Msg>();
 					messageStore.put(rm.toString(), clientMsgs);
 				}
 				clientMsgs.add(msg);
-				break;
+			}
+		} else {
+			for(RemoteMachine rm : clients.values()) {
+				if(rm.getName().equals(msg.getReceiver())) {
+					Vector<Msg> clientMsgs = messageStore.get(rm.toString());
+					if(clientMsgs == null) {
+						clientMsgs = new Vector<Msg>();
+						messageStore.put(rm.toString(), clientMsgs);
+					}
+					clientMsgs.add(msg);
+					break;
+				}
 			}
 		}
 	}
