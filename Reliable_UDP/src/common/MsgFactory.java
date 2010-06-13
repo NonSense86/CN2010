@@ -2,12 +2,12 @@ package common;
 
 public class MsgFactory {
 
-	public static Msg createUnicastMsg(String payload, String name) {
-		return new Msg(MsgType.UNICAST, payload, name);
+	public static Msg createUnicastMsg(String payload, String sender, String receiver) {
+		return new Msg(MsgType.UNICAST, payload, sender, receiver);
 	}
 	
-	public static Msg createMultiCastMsg(String payload, String name) {
-		return new Msg(MsgType.MULTICAST, payload, name);
+	public static Msg createMultiCastMsg(String payload, String sender) {
+		return new Msg(MsgType.MULTICAST, payload, sender);
 	}
 	
 	public static Msg createRenameMsg(String payload, String name) {

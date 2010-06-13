@@ -16,7 +16,6 @@ public class ConnectionChecker implements Runnable {
 			for(String k : cm.getClients().keySet()) {
 				if(System.currentTimeMillis() - cm.getClients().get(k).getLastTime() > 10000) {
 					// Remove name of the client
-					cm.getClientNames().remove(cm.getClients().get(k).getName());
 					cm.removeClient(k);
 				}
 			}

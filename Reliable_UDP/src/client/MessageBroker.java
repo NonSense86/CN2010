@@ -67,5 +67,11 @@ public class MessageBroker {
 			else
 				notificationClass_.onNameReply(true, null);
 		}
+		
+		if(msg.getMsgType() == MsgType.UNICAST) {
+			for(Msg m : msg.getMessages()) {
+				System.out.println(m.getSender() + ": " + m.getPayload());
+			}
+		}
 	}
 }

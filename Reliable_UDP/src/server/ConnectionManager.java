@@ -1,10 +1,15 @@
 package server;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.logging.Logger;
 
 import protokoll.RemoteMachine;
+
+import common.Msg;
 
 
 public class ConnectionManager {
@@ -16,10 +21,39 @@ public class ConnectionManager {
 	private Vector<String> clientNames = new Vector<String>();
 	private Thread connectionChecker;
 	private Map<String, Boolean> checkedNames = new Hashtable<String, Boolean>();
+	private Map<String,Vector<Msg>> messageStore = new Hashtable<String, Vector<Msg>>();
 	
 	public ConnectionManager() {
 		connectionChecker = new Thread(new ConnectionChecker(this));
 		connectionChecker.start();
+	}
+	
+	public synchronized void saveMsg(Msg msg) {
+		for(RemoteMachine rm : clients.values()) {
+			if(rm.getName().equals(msg.getReceiver())) {
+				Vector<Msg> clientMsgs = messageStore.get(rm.toString());
+				if(clientMsgs == null) {
+					clientMsgs = new Vector<Msg>();
+					messageStore.put(rm.toString(), clientMsgs);
+				}
+				clientMsgs.add(msg);
+				break;
+			}
+		}
+	}
+	
+	public List<Msg> readMsgs(String hostPort) {
+		Vector<Msg> v = messageStore.get(hostPort);
+		List<Msg> msgs = new ArrayList<Msg>();
+		if (v == null)
+			return msgs;
+		synchronized (v) {
+			for(Msg m : v) {
+				msgs.add(m);
+			}
+			v.clear();
+		}
+		return msgs;
 	}
 	
 	public void addClient(RemoteMachine client) {
@@ -83,6 +117,10 @@ public class ConnectionManager {
 
 	public Map<String, Boolean> getCheckedNames() {
 		return checkedNames;
+	}
+
+	public Map<String, Vector<Msg>> getMessageStore() {
+		return messageStore;
 	}
 	
 	

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,7 +46,7 @@ public class MessageBroker {
 
 		RUDPPacket rudpPacket = new RUDPPacket(packet);
 		PacketType type = rudpPacket.getPacketType();
-
+		
 		// Connection request
 		if (type == PacketType.CON_CREATE) {
 
@@ -60,9 +61,26 @@ public class MessageBroker {
 		// Payload packet
 		} else if (type == PacketType.PAYLOAD) {
 			processPayloadPacket(rudpPacket);
+		// Poll packet
+		} else if (type == PacketType.POLL) {
+			processPollingPacket(rudpPacket);
 		}
 		
 		serverInstance.getPacketTransmission().OnPacketReceived(rudpPacket);
+	}
+	
+	private void processPollingPacket(RUDPPacket rudpPacket) throws IOException {
+		List<Msg> msgs = serverInstance.getBroker().getCm().readMsgs(rudpPacket.getSender().toString());
+		
+		// If nothing to send
+		if (msgs.size() == 0) {
+			return;
+		}
+		
+		Msg msg = MsgFactory.createUnicastMsg(null, null, rudpPacket.getSender().toString());
+		msg.setMessages(msgs);
+		RUDPPacket p = RUDPPacketFactory.createPayloadPacket(rudpPacket.getSender(), msg);
+		serverInstance.getPacketTransmission().sendPacket(p);
 	}
 
 	private void processNewConnectionRequest(RUDPPacket rudpPacket) throws NumberFormatException, IOException {
@@ -111,7 +129,7 @@ public class MessageBroker {
 		if(msg.getMsgType() == MsgType.CHECKNAME) {
 			Msg m = MsgFactory.createCheckNameReplyMsg(msg.getPayload());
 			System.out.println("Checking name " +  msg.getPayload());
-			if(cm.getClientNames().contains(msg.getPayload()) || cm.getCheckedNames().get(msg.getPayload())) {
+			if(cm.getClientNames().contains(msg.getPayload()) || cm.getCheckedNames().get(msg.getPayload()) != null) {
 				m.setAvailable(false);
 			} else {
 				m.setAvailable(true);
@@ -125,6 +143,26 @@ public class MessageBroker {
 			if(!msg.isAvailable()) {
 				cm.getCheckedNames().put(msg.getPayload(), msg.isAvailable());
 			}
+		}
+		
+		if(msg.getMsgType() == MsgType.UNICAST) {			
+			// Check local
+			if(cm.getClientNames().contains(msg.getReceiver())) {
+				cm.saveMsg(msg);
+			// Check global
+			} else {
+				// If from server
+				if(cm.getServers().containsKey(rudpPacket.getSender().toString())) {
+					System.out.println("Forwarded msg");
+					return;
+				}
+				// If from client
+				if(cm.getClients().containsKey(rudpPacket.getSender().toString())) {
+					System.out.println("Forwarding msg to other servers");
+					RUDPPacket p = RUDPPacketFactory.createPayloadPacket(null, msg);
+					serverInstance.getPacketTransmission().multiCastPacket(p, cm.getServers().values());
+				}
+			}		
 		}
 	}
 

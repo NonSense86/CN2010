@@ -1,6 +1,7 @@
 package common;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class Msg implements Serializable {
 
@@ -14,11 +15,19 @@ public class Msg implements Serializable {
 	private String sender;
 	private String receiver;
 	private boolean available;
+	private List<Msg> messages;
 	
-	public Msg(MsgType msgType, String payload, String name) {
+	public Msg(MsgType msgType, String payload, String sender, String receiver) {
 		this.msgType = msgType;
 		this.payload = payload;
-		this.sender = name;
+		this.sender = sender;
+		this.receiver = receiver;
+	}
+	
+	public Msg(MsgType msgType, String payload, String sender) {
+		this.msgType = msgType;
+		this.payload = payload;
+		this.sender = sender;
 	}
 	
 	public Msg(MsgType msgType, String payload) {
@@ -56,6 +65,14 @@ public class Msg implements Serializable {
 
 	public void setAvailable(boolean available) {
 		this.available = available;
+	}
+
+	public List<Msg> getMessages() {
+		return messages;
+	}
+
+	public void setMessages(List<Msg> messages) {
+		this.messages = messages;
 	}
 	
 	

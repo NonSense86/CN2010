@@ -129,7 +129,7 @@ public class PacketTransmission implements
 			
 		}
 		
-		// Ignore others (keepalives, ...)
+		// Ignore others (keepalives, pollings ...)
 
 	}
 

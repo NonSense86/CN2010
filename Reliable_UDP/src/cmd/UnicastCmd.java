@@ -1,5 +1,13 @@
 package cmd;
 
+import java.io.IOException;
+
+import protokoll.RUDPPacket;
+import protokoll.RUDPPacketFactory;
+
+import common.Msg;
+import common.MsgFactory;
+
 import client.ClientInstance;
 
 public class UnicastCmd extends Command {
@@ -18,7 +26,18 @@ public class UnicastCmd extends Command {
 			return;
 		}
 		
+		if (client.getName().equals(args[1])) {
+			System.out.println("You can not send a Msg to yourself.");
+			return;
+		}
 		
+		try {
+			Msg msg = MsgFactory.createUnicastMsg(args[2], client.getName(), args[1]);
+			RUDPPacket p = RUDPPacketFactory.createPayloadPacket(client.getServers().get(0), msg);
+			client.getPacketTransmission().sendPacket(p);
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
 		
 	}
 
