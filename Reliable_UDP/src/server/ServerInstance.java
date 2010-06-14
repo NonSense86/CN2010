@@ -72,6 +72,7 @@ public class ServerInstance implements IPacketTransmissionNotifications, IKeepAl
 			if (params.length == 0) {
 				System.out.println("Invalid argument count");
 				System.out.println("USAGE: <myPort> [<serverHost:serverPort>]");
+				return;
 			} else if (params.length == 1) {
 				readProperties(params[0]);
 				readServers(serverList);
